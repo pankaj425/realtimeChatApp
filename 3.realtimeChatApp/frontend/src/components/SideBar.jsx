@@ -210,8 +210,8 @@ function SideBar() {
           <div className="rounded-xl bg-white/70 p-5 text-center text-sm text-slate-500">
             <p className="font-semibold text-slate-600">No other users yet</p>
             <p className="mt-1">
-              Open this app in another browser or run <code>npm run seed</code>{" "}
-              to create demo users.
+              Create another account in a second browser or incognito window.
+              New users appear here automatically.
             </p>
           </div>
         )}

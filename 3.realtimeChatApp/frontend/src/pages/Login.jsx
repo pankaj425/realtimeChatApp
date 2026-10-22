@@ -9,6 +9,7 @@ import { setSelectedUser, setUserData } from "../redux/userSlice";
 const demoAccounts = [
   { label: "Alice", email: "alice@example.com" },
   { label: "Bob", email: "bob@example.com" },
+  { label: "Charlie", email: "charlie@example.com" },
 ];
 
 function Login() {
@@ -135,7 +136,8 @@ function Login() {
               ))}
             </div>
             <p className="mt-2 text-center text-xs text-slate-400">
-              Demo users are created by <code>npm run seed</code>.
+              To try a conversation, open this page in a second browser or an
+              incognito window and log in as a different demo user.
             </p>
           </div>
 

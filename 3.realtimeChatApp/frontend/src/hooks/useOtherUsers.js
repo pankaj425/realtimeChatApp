@@ -27,7 +27,7 @@ const useOtherUsers = () => {
     };
 
     fetchUsers();
-    const interval = setInterval(fetchUsers, 30000);
+    const interval = setInterval(fetchUsers, 10000);
     window.addEventListener("focus", fetchUsers);
 
     return () => {
