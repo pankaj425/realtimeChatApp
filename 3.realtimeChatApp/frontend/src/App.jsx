@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from "react";
+import axios from "axios";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { io } from "socket.io-client";
@@ -8,11 +9,12 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import useCurrentUser from "./hooks/useCurrentUser";
 import useOtherUsers from "./hooks/useOtherUsers";
-import { socketUrl } from "./main";
+import { serverUrl, socketUrl } from "./main";
 import {
   clearUnread,
   incrementUnread,
   setOnlineUsers,
+  setOtherUsers,
   setSelectedUser,
   setSocket,
 } from "./redux/userSlice";
@@ -70,7 +72,7 @@ function App() {
   useEffect(() => {
     if (!socket || !userId) return undefined;
 
-    const handleIncoming = (message) => {
+    const handleIncoming = async (message) => {
       if (!message?._id || String(message.sender) === String(userId)) return;
 
       const senderId = String(message.sender);
@@ -78,16 +80,28 @@ function App() {
 
       if (current && String(current._id) === senderId) return;
 
-      if (!current) {
-        const sender = otherUsersRef.current.find(
-          (user) => String(user._id) === senderId
-        );
+      let sender = otherUsersRef.current.find(
+        (user) => String(user._id) === senderId
+      );
 
-        if (sender) {
-          dispatch(clearUnread(senderId));
-          dispatch(setSelectedUser(sender));
-          return;
+      if (!sender) {
+        try {
+          const { data } = await axios.get(`${serverUrl}/api/user/others`, {
+            withCredentials: true,
+          });
+          dispatch(setOtherUsers(data));
+          sender = (data || []).find(
+            (user) => String(user._id) === senderId
+          );
+        } catch {
+          // keep the unread badge even if the user list cannot refresh
         }
+      }
+
+      if (!current && sender) {
+        dispatch(clearUnread(senderId));
+        dispatch(setSelectedUser(sender));
+        return;
       }
 
       dispatch(incrementUnread(senderId));
