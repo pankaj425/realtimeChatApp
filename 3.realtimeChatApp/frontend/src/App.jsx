@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { io } from "socket.io-client";
@@ -8,23 +8,43 @@ import Home from "./pages/Home";
 import Profile from "./pages/Profile";
 import useCurrentUser from "./hooks/useCurrentUser";
 import useOtherUsers from "./hooks/useOtherUsers";
-import { serverUrl } from "./main";
-import { setOnlineUsers, setSocket } from "./redux/userSlice";
+import { socketUrl } from "./main";
+import {
+  clearUnread,
+  incrementUnread,
+  setOnlineUsers,
+  setSelectedUser,
+  setSocket,
+} from "./redux/userSlice";
 import { getAuthToken } from "./utils/authToken";
 
 function App() {
   useCurrentUser();
   useOtherUsers();
 
-  const { userData, authChecked } = useSelector((state) => state.user);
+  const { userData, authChecked, selectedUser, otherUsers, socket } = useSelector(
+    (state) => state.user
+  );
   const dispatch = useDispatch();
   const userId = userData?._id;
+
+  const selectedUserRef = useRef(null);
+  const otherUsersRef = useRef([]);
+
+  useEffect(() => {
+    selectedUserRef.current = selectedUser || null;
+  }, [selectedUser]);
+
+  useEffect(() => {
+    otherUsersRef.current = otherUsers || [];
+  }, [otherUsers]);
 
   useEffect(() => {
     if (!userId) return undefined;
 
-    const socket = io(serverUrl || window.location.origin, {
+    const socket = io(socketUrl || window.location.origin, {
       auth: { token: getAuthToken() },
+      query: { userId },
       withCredentials: true,
       transports: ["websocket", "polling"],
     });
@@ -46,6 +66,36 @@ function App() {
       dispatch(setSocket(null));
     };
   }, [userId, dispatch]);
+
+  useEffect(() => {
+    if (!socket || !userId) return undefined;
+
+    const handleIncoming = (message) => {
+      if (!message?._id || String(message.sender) === String(userId)) return;
+
+      const senderId = String(message.sender);
+      const current = selectedUserRef.current;
+
+      if (current && String(current._id) === senderId) return;
+
+      if (!current) {
+        const sender = otherUsersRef.current.find(
+          (user) => String(user._id) === senderId
+        );
+
+        if (sender) {
+          dispatch(clearUnread(senderId));
+          dispatch(setSelectedUser(sender));
+          return;
+        }
+      }
+
+      dispatch(incrementUnread(senderId));
+    };
+
+    socket.on("newMessage", handleIncoming);
+    return () => socket.off("newMessage", handleIncoming);
+  }, [socket, userId, dispatch]);
 
   if (!authChecked) {
     return (

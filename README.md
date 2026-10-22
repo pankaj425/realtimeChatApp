@@ -92,7 +92,7 @@ Run these from the repository root:
 | `SERVER_URL` | `http://localhost:<PORT>` | Public API URL, used for CORS and startup logs |
 | `CLOUD_NAME`, `API_KEY`, `API_SECRET` | empty | Optional. Without them images are saved to `backend/public/uploads` and served from `/uploads` |
 
-The frontend has an **optional** `.env` file. In development, Vite proxies `/api`, `/uploads` and `/socket.io` to the backend, so nothing is required. Set `VITE_SERVER_URL` only when deploying the frontend and backend on different origins.
+The frontend has an **optional** `.env` file. In development, Vite proxies `/api`, `/uploads` and `/socket.io` to the backend, so nothing is required. API calls always use the current origin (Vite proxy locally, `frontend/vercel.json` rewrites on Vercel) so auth cookies stay first-party. Set `VITE_SERVER_URL` to the API URL when the frontend and backend are on different origins; it is used for the Socket.IO connection.
 
 ## API reference
 
@@ -166,8 +166,9 @@ Open the `SERVER_URL` / server port. A `render.yaml` blueprint is included for t
 
 1. Deploy `backend` to Render/Railway. Set `MONGO_URI`, `JWT_SECRET`, `SERVER_URL` and `CLIENT_URL`.
 2. Deploy `frontend` to Vercel/Netlify with `VITE_SERVER_URL=https://your-api.example.com`.
+3. If you use Vercel, update the `/api` and `/uploads` destinations in `frontend/vercel.json` to your backend URL. The rewrites keep API requests and cookies on the frontend domain, so they are not treated as third-party cookies.
 
-Cookies are `SameSite=None; Secure` automatically when `NODE_ENV=production`. Because browsers increasingly block third-party cookies between `vercel.app` and `onrender.com`, the frontend also keeps the JWT in `localStorage` and sends it as `Authorization: Bearer ...` and in the Socket.IO `auth.token` handshake.
+Login and signup also return a JWT. The frontend stores it in `localStorage` and sends it as `Authorization: Bearer ...` and in the Socket.IO `auth.token` handshake, so newer backend builds keep working even without cookies.
 
 ## Troubleshooting
 

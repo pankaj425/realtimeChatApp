@@ -9,6 +9,7 @@ const userSlice = createSlice({
     selectedUser: null,
     socket: null,
     onlineUsers: [],
+    unreadByUser: {},
   },
   reducers: {
     setUserData: (state, action) => {
@@ -29,6 +30,16 @@ const userSlice = createSlice({
     setOnlineUsers: (state, action) => {
       state.onlineUsers = action.payload || [];
     },
+    incrementUnread: (state, action) => {
+      const id = String(action.payload);
+      state.unreadByUser[id] = (state.unreadByUser[id] || 0) + 1;
+    },
+    clearUnread: (state, action) => {
+      delete state.unreadByUser[String(action.payload)];
+    },
+    clearAllUnread: (state) => {
+      state.unreadByUser = {};
+    },
   },
 });
 
@@ -39,5 +50,8 @@ export const {
   setSelectedUser,
   setSocket,
   setOnlineUsers,
+  incrementUnread,
+  clearUnread,
+  clearAllUnread,
 } = userSlice.actions;
 export default userSlice.reducer;

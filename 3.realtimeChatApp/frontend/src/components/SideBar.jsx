@@ -8,6 +8,8 @@ import { BiLogOutCircle } from "react-icons/bi";
 import dp from "../assets/dp.webp";
 import { resolveMediaUrl, serverUrl } from "../main";
 import {
+  clearAllUnread,
+  clearUnread,
   setOtherUsers,
   setSelectedUser,
   setUserData,
@@ -34,9 +36,8 @@ function Avatar({ user, online, size = "h-[52px] w-[52px]" }) {
 }
 
 function SideBar() {
-  const { userData, otherUsers, selectedUser, onlineUsers } = useSelector(
-    (state) => state.user
-  );
+  const { userData, otherUsers, selectedUser, onlineUsers, unreadByUser } =
+    useSelector((state) => state.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -91,6 +92,7 @@ function SideBar() {
   };
 
   const selectUser = (user) => {
+    dispatch(clearUnread(user._id));
     dispatch(setSelectedUser(user));
     closeSearch();
   };
@@ -105,6 +107,7 @@ function SideBar() {
       dispatch(setUserData(null));
       dispatch(setOtherUsers([]));
       dispatch(setSelectedUser(null));
+      dispatch(clearAllUnread());
       navigate("/login", { replace: true });
     }
   };
@@ -217,6 +220,7 @@ function SideBar() {
           {list.map((user) => {
             const isOnline = onlineUsers.includes(user._id);
             const isSelected = selectedUser?._id === user._id;
+            const unread = unreadByUser[user._id] || 0;
 
             return (
               <li key={user._id}>
@@ -231,15 +235,26 @@ function SideBar() {
                 >
                   <Avatar user={user} online={isOnline} />
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[16px] font-semibold">
-                      {displayName(user)}
+                    <span className="flex items-center gap-2">
+                      <span className="block min-w-0 flex-1 truncate text-[16px] font-semibold">
+                        {displayName(user)}
+                      </span>
+                      {unread > 0 && (
+                        <span className="inline-flex min-w-[20px] shrink-0 items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[11px] font-bold text-white">
+                          {unread > 9 ? "9+" : unread}
+                        </span>
+                      )}
                     </span>
                     <span
                       className={`block truncate text-xs ${
                         isSelected ? "text-white/80" : "text-slate-400"
                       }`}
                     >
-                      {isOnline ? "Online" : user.email || `@${user.userName}`}
+                      {isOnline
+                        ? "Online"
+                        : unread > 0
+                          ? `${unread} new message${unread > 1 ? "s" : ""}`
+                          : user.email || `@${user.userName}`}
                     </span>
                   </span>
                 </button>

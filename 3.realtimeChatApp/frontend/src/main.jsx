@@ -25,7 +25,18 @@ axios.interceptors.response.use(undefined, (error) => {
   return Promise.reject(error);
 });
 
-export const serverUrl = (import.meta.env.VITE_SERVER_URL || "").replace(/\/$/, "");
+const configuredServerUrl = (import.meta.env.VITE_SERVER_URL || "").replace(
+  /\/$/,
+  ""
+);
+
+// API traffic stays on the same origin: Vite proxies it in development and
+// Vercel rewrites it to the API host in production. This keeps auth cookies
+// first-party so they are not blocked as third-party cookies.
+export const serverUrl = "";
+
+// Socket.IO cannot use the Vercel rewrite, so connect to the API host directly.
+export const socketUrl = configuredServerUrl;
 
 export const resolveMediaUrl = (url) => {
   if (!url) return "";
