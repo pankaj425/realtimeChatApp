@@ -1,13 +1,22 @@
 import http from "http"
 import express from "express"
+import dotenv from "dotenv"
 import { Server } from "socket.io"
 
+dotenv.config()
+
 let app = express()
+
+const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean)
 
 const server=http.createServer(app)
 const io=new Server(server,{
     cors:{
-        origin:"http://localhost:5173"
+        origin: allowedOrigins,
+        credentials: true
     }
 })
  const userSocketMap ={}

@@ -12,15 +12,31 @@
 
     const port = process.env.PORT || 5000;
 
+    const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean);
+
+    app.set("trust proxy", 1);
+
     // Middleware
     app.use(
     cors({
-        origin: "http://localhost:5173",
+        origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error("Not allowed by CORS"));
+        },
         credentials: true,
     })
     );
     app.use(express.json());
     app.use(cookieParser());
+
+    app.get("/", (req, res) => {
+    res.json({ status: "ok", service: "realtime-chat-backend" });
+    });
 
     // Routes
     app.use("/api/auth", authRouter);
