@@ -1,5 +1,6 @@
 import http from "node:http";
 import express from "express";
+import jwt from "jsonwebtoken";
 import { Server } from "socket.io";
 import env from "../config/env.js";
 
@@ -15,6 +16,22 @@ const io = new Server(server, {
   },
 });
 
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+
+  if (!token) {
+    return next(new Error("Authentication required"));
+  }
+
+  try {
+    const payload = jwt.verify(token, env.jwtSecret);
+    socket.userId = String(payload.userId);
+    return next();
+  } catch {
+    return next(new Error("Invalid or expired session"));
+  }
+});
+
 const userSocketMap = new Map();
 
 export const getReceiverSocketIds = (receiver) => {
@@ -28,27 +45,21 @@ const broadcastOnlineUsers = () => {
 };
 
 io.on("connection", (socket) => {
-  const userId = socket.handshake.query.userId;
+  const userId = socket.userId;
 
-  if (userId) {
-    const key = String(userId);
-    if (!userSocketMap.has(key)) {
-      userSocketMap.set(key, new Set());
-    }
-    userSocketMap.get(key).add(socket.id);
-    broadcastOnlineUsers();
+  if (!userSocketMap.has(userId)) {
+    userSocketMap.set(userId, new Set());
   }
+  userSocketMap.get(userId).add(socket.id);
+  broadcastOnlineUsers();
 
   socket.on("disconnect", () => {
-    if (!userId) return;
-
-    const key = String(userId);
-    const sockets = userSocketMap.get(key);
+    const sockets = userSocketMap.get(userId);
     if (!sockets) return;
 
     sockets.delete(socket.id);
     if (sockets.size === 0) {
-      userSocketMap.delete(key);
+      userSocketMap.delete(userId);
     }
     broadcastOnlineUsers();
   });

@@ -59,7 +59,7 @@ export const signUp = async (req, res) => {
     const token = genToken(user._id);
 
     res.cookie("token", token, cookieOptions);
-    return res.status(201).json(user);
+    return res.status(201).json({ user, token });
   } catch (error) {
     console.error("[signup]", error.message);
     if (error.code === 11000) {
@@ -92,10 +92,21 @@ export const login = async (req, res) => {
 
     const token = genToken(user._id);
     res.cookie("token", token, cookieOptions);
-    return res.status(200).json(user);
+    return res.status(200).json({ user, token });
   } catch (error) {
     console.error("[login]", error.message);
     return res.status(500).json({ message: "could not log in" });
+  }
+};
+
+export const refreshToken = async (req, res) => {
+  try {
+    const token = genToken(req.userId);
+    res.cookie("token", token, cookieOptions);
+    return res.status(200).json({ token });
+  } catch (error) {
+    console.error("[refresh-token]", error.message);
+    return res.status(500).json({ message: "could not refresh the session" });
   }
 };
 

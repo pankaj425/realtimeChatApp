@@ -3,6 +3,7 @@ import axios from "axios";
 import { useDispatch } from "react-redux";
 import { serverUrl } from "../main";
 import { setAuthChecked, setUserData } from "../redux/userSlice";
+import { getAuthToken, saveAuthToken } from "../utils/authToken";
 
 const useCurrentUser = () => {
   const dispatch = useDispatch();
@@ -15,6 +16,19 @@ const useCurrentUser = () => {
         const { data } = await axios.get(`${serverUrl}/api/user/current`, {
           withCredentials: true,
         });
+
+        if (!getAuthToken()) {
+          try {
+            const { data: refreshed } = await axios.get(
+              `${serverUrl}/api/auth/refresh`,
+              { withCredentials: true }
+            );
+            if (refreshed?.token) saveAuthToken(refreshed.token);
+          } catch {
+            // cookie sessions still work for API calls
+          }
+        }
+
         if (!cancelled) dispatch(setUserData(data));
       } catch (error) {
         if (!cancelled && error.response?.status !== 401) {

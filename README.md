@@ -17,7 +17,7 @@ Create a free account on the sign-up page to try the hosted version. For instant
 
 - Realtime one-to-one messaging with Socket.IO
 - Online / offline presence with multi-device support
-- JWT auth using secure httpOnly cookies (and optional Bearer tokens for API clients)
+- JWT auth using secure httpOnly cookies **and** Bearer tokens (stored in `localStorage`) so cross-domain and incognito sessions keep working when third-party cookies are blocked
 - Image sharing - Cloudinary when configured, local disk otherwise
 - User search by name, username or email
 - Responsive, mobile-friendly UI with emoji picker and image previews
@@ -96,13 +96,14 @@ The frontend has an **optional** `.env` file. In development, Vite proxies `/api
 
 ## API reference
 
-All protected routes accept the `token` cookie or an `Authorization: Bearer <token>` header.
+All protected routes accept the `token` cookie or an `Authorization: Bearer <token>` header. Login and signup return `{ user, token }`; the browser stores the token and uses it for HTTP and Socket.IO. The frontend sends the token in the Socket.IO handshake as `auth: { token }`.
 
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `GET` | `/api/health` | Service, database and storage status |
-| `POST` | `/api/auth/signup` | Create an account |
-| `POST` | `/api/auth/login` | Log in and set the auth cookie |
+| `POST` | `/api/auth/signup` | Create an account (returns `{ user, token }`) |
+| `POST` | `/api/auth/login` | Log in (returns `{ user, token }`) |
+| `GET` | `/api/auth/refresh` | Issue a fresh token for a valid cookie session |
 | `GET/POST` | `/api/auth/logout` | Clear the auth cookie |
 | `GET` | `/api/user/current` | Current user |
 | `GET` | `/api/user/others` | All other users |
@@ -114,11 +115,12 @@ All protected routes accept the `token` cookie or an `Authorization: Bearer <tok
 Example with `curl`:
 
 ```bash
-curl -c cookies.txt -X POST http://localhost:5000/api/auth/login \
+# The response looks like {"user":{...},"token":"..."}
+curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"alice@example.com","password":"password123"}'
 
-curl -b cookies.txt http://localhost:5000/api/user/current
+curl -H "Authorization: Bearer <token>" http://localhost:5000/api/user/current
 ```
 
 ## Project structure
@@ -165,7 +167,7 @@ Open the `SERVER_URL` / server port. A `render.yaml` blueprint is included for t
 1. Deploy `backend` to Render/Railway. Set `MONGO_URI`, `JWT_SECRET`, `SERVER_URL` and `CLIENT_URL`.
 2. Deploy `frontend` to Vercel/Netlify with `VITE_SERVER_URL=https://your-api.example.com`.
 
-Cookies are `SameSite=None; Secure` automatically when `NODE_ENV=production`, so cross-domain auth works over HTTPS.
+Cookies are `SameSite=None; Secure` automatically when `NODE_ENV=production`. Because browsers increasingly block third-party cookies between `vercel.app` and `onrender.com`, the frontend also keeps the JWT in `localStorage` and sends it as `Authorization: Bearer ...` and in the Socket.IO `auth.token` handshake.
 
 ## Troubleshooting
 
@@ -173,6 +175,7 @@ Cookies are `SameSite=None; Secure` automatically when `NODE_ENV=production`, so
 | --- | --- |
 | `MongoDB connection error` | Start MongoDB: `docker compose up -d mongo`, or set `MONGO_URI` to your Atlas string |
 | Login works but refresh logs me out | Make sure `CLIENT_URL` matches the exact frontend URL (including port) and both apps use the same origin/proxy |
+| Logged in but see no users and receive no messages | Usually blocked third-party cookies across domains. Update to the token-based build, then log out and log in again so a token is stored. Also check `CLIENT_URL` |
 | Images don't load | Check `SERVER_URL` is the URL your browser uses to reach the API; or set Cloudinary credentials |
 | CORS error | Add the frontend origin to `CLIENT_URL` (comma-separated) |
 | Demo login says "user does not exist" | Run `npm run seed` |

@@ -10,6 +10,7 @@ import useCurrentUser from "./hooks/useCurrentUser";
 import useOtherUsers from "./hooks/useOtherUsers";
 import { serverUrl } from "./main";
 import { setOnlineUsers, setSocket } from "./redux/userSlice";
+import { getAuthToken } from "./utils/authToken";
 
 function App() {
   useCurrentUser();
@@ -23,7 +24,7 @@ function App() {
     if (!userId) return undefined;
 
     const socket = io(serverUrl || window.location.origin, {
-      query: { userId },
+      auth: { token: getAuthToken() },
       withCredentials: true,
       transports: ["websocket", "polling"],
     });

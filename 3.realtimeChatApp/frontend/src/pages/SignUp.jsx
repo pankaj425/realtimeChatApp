@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { serverUrl } from "../main";
+import { saveAuthToken } from "../utils/authToken";
 import { setUserData } from "../redux/userSlice";
 
 function SignUp() {
@@ -26,7 +27,8 @@ function SignUp() {
         { userName: userName.trim(), email: email.trim(), password },
         { withCredentials: true }
       );
-      dispatch(setUserData(data));
+      if (data.token) saveAuthToken(data.token);
+      dispatch(setUserData(data.user ?? data));
       navigate("/profile", { replace: true });
     } catch (error) {
       setErr(

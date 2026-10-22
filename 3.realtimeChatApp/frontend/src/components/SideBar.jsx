@@ -12,6 +12,7 @@ import {
   setSelectedUser,
   setUserData,
 } from "../redux/userSlice";
+import { clearAuthToken } from "../utils/authToken";
 
 const displayName = (user) => user?.name || user?.userName || "Unknown user";
 
@@ -100,6 +101,7 @@ function SideBar() {
     } catch (error) {
       console.error("Logout failed", error);
     } finally {
+      clearAuthToken();
       dispatch(setUserData(null));
       dispatch(setOtherUsers([]));
       dispatch(setSelectedUser(null));

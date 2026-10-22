@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { serverUrl } from "../main";
+import { saveAuthToken } from "../utils/authToken";
 import { setSelectedUser, setUserData } from "../redux/userSlice";
 
 const demoAccounts = [
@@ -29,7 +30,8 @@ function Login() {
         { email: emailValue, password: passwordValue },
         { withCredentials: true }
       );
-      dispatch(setUserData(data));
+      if (data.token) saveAuthToken(data.token);
+      dispatch(setUserData(data.user ?? data));
       dispatch(setSelectedUser(null));
       navigate("/", { replace: true });
     } catch (error) {
