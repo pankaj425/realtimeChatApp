@@ -1,43 +1,57 @@
-import http from "http"
-import express from "express"
-import dotenv from "dotenv"
-import { Server } from "socket.io"
+import http from "node:http";
+import express from "express";
+import { Server } from "socket.io";
+import env from "../config/env.js";
 
-dotenv.config()
+const app = express();
+const server = http.createServer(app);
 
-let app = express()
+const allowedOrigins = [...new Set([...env.clientUrls, env.serverUrl])];
 
-const allowedOrigins = (process.env.CLIENT_URL || "http://localhost:5173")
-    .split(",")
-    .map((origin) => origin.trim().replace(/\/$/, ""))
-    .filter(Boolean)
+const io = new Server(server, {
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
+});
 
-const server=http.createServer(app)
-const io=new Server(server,{
-    cors:{
-        origin: allowedOrigins,
-        credentials: true
+const userSocketMap = new Map();
+
+export const getReceiverSocketIds = (receiver) => {
+  return [...(userSocketMap.get(String(receiver)) || [])];
+};
+
+export const getReceiverSocketId = (receiver) => getReceiverSocketIds(receiver)[0];
+
+const broadcastOnlineUsers = () => {
+  io.emit("getOnlineUsers", [...userSocketMap.keys()]);
+};
+
+io.on("connection", (socket) => {
+  const userId = socket.handshake.query.userId;
+
+  if (userId) {
+    const key = String(userId);
+    if (!userSocketMap.has(key)) {
+      userSocketMap.set(key, new Set());
     }
-})
- const userSocketMap ={}
- export const getReceiverSocketId=(receiver)=>{
-    return userSocketMap[receiver]
- }
-io.on("connection",(socket)=>{
-  const userId=socket.handshake.query.userId
-  if(userId!=undefined){
-    userSocketMap[userId]=socket.id
+    userSocketMap.get(key).add(socket.id);
+    broadcastOnlineUsers();
   }
-  io.emit("getOnlineUsers",Object.keys(userSocketMap))
 
-socket.on("disconnect",()=>{
-  delete userSocketMap[userId]  
- io.emit("getOnlineUsers",Object.keys(userSocketMap))
+  socket.on("disconnect", () => {
+    if (!userId) return;
 
-})
-   
-})
+    const key = String(userId);
+    const sockets = userSocketMap.get(key);
+    if (!sockets) return;
 
+    sockets.delete(socket.id);
+    if (sockets.size === 0) {
+      userSocketMap.delete(key);
+    }
+    broadcastOnlineUsers();
+  });
+});
 
-
-export {app,server,io}
+export { app, server, io };

@@ -4,9 +4,9 @@ services:
     runtime: node
     rootDir: 3.realtimeChatApp/backend
     plan: free
-    buildCommand: npm install
+    buildCommand: npm install && npm --prefix ../frontend install && npm --prefix ../frontend run build
     startCommand: npm start
-    healthCheckPath: /
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -14,6 +14,8 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
+      - key: SERVER_URL
+        sync: false
       - key: CLIENT_URL
         sync: false
       - key: CLOUD_NAME

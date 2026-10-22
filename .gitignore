@@ -9,4 +9,6 @@ build/
 .vscode/
 .idea/
 .vercel/
+3.realtimeChatApp/backend/public/uploads/*
+!3.realtimeChatApp/backend/public/uploads/.gitkeep
 

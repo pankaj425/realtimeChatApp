@@ -1,0 +1,20 @@
+{
+  "name": "chatly",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Chatly - a realtime chat app built with MERN and Socket.IO",
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "dev": "node scripts/dev.mjs",
+    "dev:backend": "npm --prefix 3.realtimeChatApp/backend run dev",
+    "dev:frontend": "npm --prefix 3.realtimeChatApp/frontend run dev",
+    "build": "npm --prefix 3.realtimeChatApp/frontend run build",
+    "start": "npm --prefix 3.realtimeChatApp/backend start",
+    "seed": "npm --prefix 3.realtimeChatApp/backend run seed",
+    "test": "npm --prefix 3.realtimeChatApp/backend test",
+    "lint": "npm --prefix 3.realtimeChatApp/frontend run lint"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

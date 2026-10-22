@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            3.realtimeChatApp/backend/package-lock.json
+            3.realtimeChatApp/frontend/package-lock.json
+
+      - name: Install backend dependencies
+        working-directory: 3.realtimeChatApp/backend
+        run: npm ci
+
+      - name: Run backend tests
+        working-directory: 3.realtimeChatApp/backend
+        run: npm test
+
+      - name: Install frontend dependencies
+        working-directory: 3.realtimeChatApp/frontend
+        run: npm ci
+
+      - name: Lint frontend
+        working-directory: 3.realtimeChatApp/frontend
+        run: npm run lint
+
+      - name: Build frontend
+        working-directory: 3.realtimeChatApp/frontend
+        run: npm run build

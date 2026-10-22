@@ -1,20 +1,24 @@
-import jwt from "jsonwebtoken"
-const isAuth=async (req,res,next)=>{
-    try {
-        let token=req.cookies.token
-        if(!token){
-            return res.status(400).json({message:"token is not found"})
-        }
+import jwt from "jsonwebtoken";
+import env from "../config/env.js";
 
-        let verifyToken=  jwt.verify(token,process.env.JWT_SECRET)
-        req.userId=verifyToken.userId
-        next()
+const isAuth = async (req, res, next) => {
+  const header = req.headers.authorization || "";
+  const bearerToken = header.startsWith("Bearer ") ? header.slice(7) : null;
+  const token = req.cookies?.token || bearerToken;
 
+  if (!token) {
+    return res.status(401).json({ message: "please log in to continue" });
+  }
 
-    } catch (error) {
-        console.log(error)
-        return res.status(500).json({message:`isauth error ${error}`})
-    }
-}
+  try {
+    const payload = jwt.verify(token, env.jwtSecret);
+    req.userId = payload.userId;
+    return next();
+  } catch {
+    return res
+      .status(401)
+      .json({ message: "session expired, please log in again" });
+  }
+};
 
-export default isAuth
+export default isAuth;
