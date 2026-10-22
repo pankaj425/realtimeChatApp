@@ -3,6 +3,7 @@ import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { IoIosSearch } from "react-icons/io";
+import { FaRotate } from "react-icons/fa6";
 import { RxCross2 } from "react-icons/rx";
 import { BiLogOutCircle } from "react-icons/bi";
 import dp from "../assets/dp.webp";
@@ -45,6 +46,7 @@ function SideBar() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const sortedUsers = useMemo(() => {
     const online = new Set(onlineUsers);
@@ -89,6 +91,24 @@ function SideBar() {
     setSearchOpen(false);
     setQuery("");
     setResults([]);
+  };
+
+  const refreshUsers = async () => {
+    if (refreshing) return;
+
+    setRefreshing(true);
+    try {
+      const { data } = await axios.get(`${serverUrl}/api/user/others`, {
+        withCredentials: true,
+      });
+      dispatch(setOtherUsers(data));
+    } catch (error) {
+      if (error.response?.status !== 401) {
+        console.error("Could not refresh users", error);
+      }
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const selectUser = (user) => {
@@ -182,14 +202,26 @@ function SideBar() {
             </button>
           </form>
         ) : (
-          <button
-            type="button"
-            className="flex h-[48px] w-full items-center gap-2 rounded-full bg-white px-4 text-slate-500 shadow-md transition hover:shadow-lg"
-            onClick={() => setSearchOpen(true)}
-          >
-            <IoIosSearch className="h-5 w-5" />
-            <span className="text-[15px]">Search people...</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="flex h-[48px] min-w-0 flex-1 items-center gap-2 rounded-full bg-white px-4 text-slate-500 shadow-md transition hover:shadow-lg"
+              onClick={() => setSearchOpen(true)}
+            >
+              <IoIosSearch className="h-5 w-5 shrink-0" />
+              <span className="truncate text-[15px]">Search people...</span>
+            </button>
+            <button
+              type="button"
+              aria-label="Refresh people"
+              title="Refresh people"
+              className="flex h-[48px] w-[48px] shrink-0 items-center justify-center rounded-full bg-white text-[#1797c2] shadow-md transition hover:shadow-lg disabled:opacity-60"
+              onClick={refreshUsers}
+              disabled={refreshing}
+            >
+              <FaRotate className={`h-5 w-5 ${refreshing ? "animate-spin" : ""}`} />
+            </button>
+          </div>
         )}
       </div>
 
